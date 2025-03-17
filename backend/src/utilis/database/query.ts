@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { PlatFromEnum, Prisma } from "@prisma/client";
 import { AppError, prisma, UploadSolutionArrayType } from "../functions";
 import { StatusCode } from "../types";
 
@@ -129,9 +129,16 @@ const solutionUpload = async (data: UploadSolutionArrayType) => {
   }
 };
 
-const contestData = async (userId: string, pageNo: string) => {
+const contestData = async (
+  userId: string,
+  pageNo: string,
+  platfrom?: PlatFromEnum,
+) => {
   try {
     const data = await prisma.contest.findMany({
+      where: {
+        ...(platfrom && { PlatFrom: platfrom }),
+      },
       skip: Number(pageNo) * 21,
       take: 21,
       include: {

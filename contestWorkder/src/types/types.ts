@@ -141,7 +141,13 @@ export interface LeetCodePastContest {
   startTime: number;
 }
 
+type UploadDataType = {
+  contestId: string;
+  url: string;
+};
+
 export {
+  UploadDataType,
   LeetCodeFeaturedContestData,
   LeetCodeFeaturedResponseData,
   FeaturedContest,

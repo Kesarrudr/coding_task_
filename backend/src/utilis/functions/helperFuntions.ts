@@ -14,6 +14,7 @@ import {
   UploadSolutionType,
   UserSignUpType,
 } from "./zod";
+import { PlatFromEnum } from "@prisma/client";
 
 const createNewUser = async (userData: UserSignUpType) => {
   const hashpassowd = await bcrypt.hash(userData.password, 10);
@@ -53,8 +54,12 @@ const updateSolution = async (data: UploadSolutionArrayType) => {
   return response;
 };
 
-const getContestData = async (userId: string, pageNo: string) => {
-  const result = await contestData(userId, pageNo);
+const getContestData = async (
+  userId: string,
+  pageNo: string,
+  platFrom?: PlatFromEnum,
+) => {
+  const result = await contestData(userId, pageNo, platFrom);
   return result;
 };
 

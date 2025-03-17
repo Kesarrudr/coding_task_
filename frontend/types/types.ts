@@ -6,6 +6,7 @@ enum PlatFormEnum {
   CodeForces = "CodeForces",
   LeetCode = "LeetCode",
   CodeChef = "CodeChef",
+  all = "all",
 }
 enum StatusEnum {
   success = "success",

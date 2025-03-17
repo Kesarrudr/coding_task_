@@ -101,7 +101,11 @@ const ContestData = asyncHandler(async (req: CustomRequest, res: Response) => {
 
   const userData = req.userData;
 
-  const result = await getContestData(userData.id, parseData.data.pageno);
+  const result = await getContestData(
+    userData.id,
+    parseData.data.pageno,
+    parseData.data.platfrom,
+  );
 
   sendResponse(res, StatusCode.OK, StatusEnum.success, "Contest Data", result);
 });

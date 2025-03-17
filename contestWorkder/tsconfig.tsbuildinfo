@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/platfrom/codeChef.ts","./src/platfrom/codeforce.ts","./src/platfrom/leetcode.ts","./src/types/types.ts","./src/utilis/codeforces.utilis.ts"],"version":"5.8.2"}
+{"root":["./src/index.ts","./src/platfrom/codeChef.ts","./src/platfrom/codeforce.ts","./src/platfrom/leetcode.ts","./src/platfrom/uploadSolutins.ts","./src/types/types.ts","./src/utilis/codeforces.utilis.ts","./src/utilis/helperfuntions.ts","./src/utilis/query.ts"],"version":"5.8.2"}

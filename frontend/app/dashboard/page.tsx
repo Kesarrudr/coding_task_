@@ -62,7 +62,10 @@ export default function DashboardPage() {
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
-  const [platformFilter, setPlatformFilter] = useState<string>("all");
+
+  const [platformFilter, setPlatformFilter] = useState<PlatFormEnum>(
+    PlatFormEnum.all,
+  );
   const [timeFilter, setTimeFilter] = useState<string>("all");
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -80,7 +83,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchContests = async () => {
       setInitialLoading(true);
-      const response = await getContest(pageNo);
+      const response = await getContest(pageNo, platformFilter);
       if (response) {
         // Sort contests: upcoming first, then past
         const now = Math.floor(Date.now() / 1000);
@@ -102,7 +105,7 @@ export default function DashboardPage() {
     };
 
     fetchContests();
-  }, []);
+  }, [platformFilter]);
 
   useEffect(() => {
     let result = [...contests];
@@ -153,7 +156,12 @@ export default function DashboardPage() {
     if (contests.length <= 0) return;
 
     setLoading(true);
-    const response = await getContest(newPage);
+    let response;
+    if (platformFilter && platformFilter != PlatFormEnum.all) {
+      response = await getContest(newPage, platformFilter);
+    } else {
+      response = await getContest(newPage);
+    }
 
     if (response) {
       const now = Math.floor(Date.now() / 1000);
@@ -233,7 +241,7 @@ export default function DashboardPage() {
       case PlatFormEnum.LeetCode:
         return `https://leetcode.com/contest/${slug}`;
       case PlatFormEnum.CodeChef:
-        return `https://www.codechef.com/contests/${slug}`;
+        return `https://www.codechef.com/${slug}`;
       default:
         return "#";
     }
@@ -325,13 +333,17 @@ export default function DashboardPage() {
                     </label>
                     <Select
                       value={platformFilter}
-                      onValueChange={setPlatformFilter}
+                      onValueChange={(value) =>
+                        setPlatformFilter(value as PlatFormEnum)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="All Platforms" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Platforms</SelectItem>
+                        <SelectItem value={PlatFormEnum.all}>
+                          All Platforms
+                        </SelectItem>
                         <SelectItem value={PlatFormEnum.CodeForces}>
                           CodeForces
                         </SelectItem>
@@ -381,7 +393,7 @@ export default function DashboardPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      setPlatformFilter("all");
+                      setPlatformFilter(PlatFormEnum.all);
                       setTimeFilter("all");
                       setShowBookmarkedOnly(false);
                     }}
@@ -642,7 +654,7 @@ export default function DashboardPage() {
                     className="mt-4"
                     onClick={() => {
                       setSearchTerm("");
-                      setPlatformFilter("all");
+                      setPlatformFilter(PlatFormEnum.all);
                       setTimeFilter("all");
                       setShowBookmarkedOnly(false);
                     }}

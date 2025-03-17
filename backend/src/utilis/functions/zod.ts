@@ -1,3 +1,4 @@
+import { PlatFromEnum } from "@prisma/client";
 import z from "zod";
 const UserSignUpSchema = z
   .object({
@@ -34,6 +35,13 @@ const UploadSolutionArraySchema = z.array(UploadSolutionSchema);
 
 const ContestQuerySchema = z.object({
   pageno: z.string().nonempty("Requied pageno"),
+  platfrom: z
+    .enum([
+      PlatFromEnum.CodeForces,
+      PlatFromEnum.LeetCode,
+      PlatFromEnum.CodeChef,
+    ])
+    .optional(),
 });
 
 type UserSignUpType = z.infer<typeof UserSignUpSchema>;

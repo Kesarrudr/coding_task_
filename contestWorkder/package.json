@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prisma": "npx prisma db pull && npx prisma generate ",
+    "prisma": "npx prisma db pull && npx prisma generate",
     "build": "tsc --build",
-    "dev": "pnpm run prisma && pnpm run build && node dist/index.js"
+    "dev": "pnpm run prisma && pnpm run build && node dist/index.js",
+    "start": "pnpm run build && node dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +17,12 @@
   "dependencies": {
     "@prisma/client": "6.5.0",
     "axios": "^1.8.3",
+    "googleapis": "^146.0.0",
     "prisma": "^6.5.0",
+    "string-similarity": "^4.0.4",
     "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "@types/string-similarity": "^4.0.2"
   }
 }
