@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Contest {
+  id               String             @unique @default(uuid())
+  PlatFrom         PlatFromEnum
+  querySlug        String             @unique
+  contestName      String
+  StartTime        Int
+  CreatedAt        DateTime           @default(now())
+  ContestSolutions ContestSolutions[]
+  UserBookMark     UserBookMark[]
+
+  @@unique([querySlug, PlatFrom])
+  @@index([id, PlatFrom, querySlug])
+}
+
+model ContestSolutions {
+  id        String   @unique @default(uuid())
+  url       String
+  contestId String
+  CreatedAt DateTime @default(now())
+  Contest   Contest  @relation(fields: [contestId], references: [id])
+
+  @@unique([url, contestId])
+  @@index([contestId, url])
+}
+
+model User {
+  id           String         @unique @default(uuid())
+  username     String         @unique
+  password     String
+  CreatedAt    DateTime       @default(now())
+  UserBookMark UserBookMark[]
+
+  @@index([username, id])
+}
+
+model UserBookMark {
+  id        String   @unique @default(uuid())
+  userId    String
+  contestId String
+  CreatedAt DateTime @default(now())
+  Contest   Contest  @relation(fields: [contestId], references: [id])
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, contestId])
+  @@index([userId, contestId])
+}
+
+enum PlatFromEnum {
+  CodeForces
+  LeetCode
+  CodeChef
+}

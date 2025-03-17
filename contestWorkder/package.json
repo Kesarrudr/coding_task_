@@ -1,0 +1,21 @@
+{
+  "name": "contestworkder",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc --build",
+    "dev": "pnpm run build && node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/client": "6.5.0",
+    "axios": "^1.8.3",
+    "prisma": "^6.5.0",
+    "typescript": "^5.8.2"
+  }
+}

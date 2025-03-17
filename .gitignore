@@ -1,0 +1,39 @@
+# Node.js dependencies
+node_modules/
+
+# pnpm store (pnpm uses a central store for packages)
+.pnpm/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# npm package lock file (optional, depending on your use case)
+pnpm-lock.yaml
+
+# Build directories
+dist/
+build/
+
+# Optional: JetBrains IDE files
+.idea/
+
+# Optional: VS Code files
+.vscode/
+
+# Coverage reports
+coverage/
+
+# Other temporary files
+*.log
+*.swp
+
