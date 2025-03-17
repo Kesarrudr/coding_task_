@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "prisma": "npx prisma db pull && npx prisma generate ",
     "build": "tsc --build",
-    "dev": "pnpm run build && node dist/index.js"
+    "dev": "pnpm run prisma && pnpm run build && node dist/index.js"
   },
   "keywords": [],
   "author": "",

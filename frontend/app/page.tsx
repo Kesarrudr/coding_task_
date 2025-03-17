@@ -1,9 +1,21 @@
-import Link from "next/link"
-import { ArrowRight, Code, Trophy } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Navbar } from "@/components/navbar"
+"use client";
+import Link from "next/link";
+import { ArrowRight, Code, Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Navbar } from "@/components/navbar";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const authToken = localStorage.getItem("authToken");
+    if (authToken) {
+      router.push("/dashboard");
+    }
+  });
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -13,10 +25,12 @@ export default function Home() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <Trophy className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">Track Coding Contests</h1>
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+              Track Coding Contests
+            </h1>
             <p className="max-w-[42rem] text-muted-foreground sm:text-xl">
-              Stay updated with the latest contests from LeetCode, CodeForces, CodeChef and more. Never miss a coding
-              competition again!
+              Stay updated with the latest contests from LeetCode, CodeForces,
+              CodeChef and more. Never miss a coding competition again!
             </p>
           </div>
           <div className="flex flex-col gap-4 sm:flex-row">
@@ -37,17 +51,20 @@ export default function Home() {
               {
                 icon: <Code className="h-8 w-8 text-primary" />,
                 title: "Multiple Platforms",
-                description: "Track contests from LeetCode, CodeForces, CodeChef and more in one place.",
+                description:
+                  "Track contests from LeetCode, CodeForces, CodeChef and more in one place.",
               },
               {
                 icon: <Trophy className="h-8 w-8 text-primary" />,
                 title: "Live Countdowns",
-                description: "See exactly when contests start with live countdowns in your local time.",
+                description:
+                  "See exactly when contests start with live countdowns in your local time.",
               },
               {
                 icon: <Code className="h-8 w-8 text-primary" />,
                 title: "Bookmark Contests",
-                description: "Save contests you're interested in and get quick access to them.",
+                description:
+                  "Save contests you're interested in and get quick access to them.",
               },
             ].map((feature, index) => (
               <div
@@ -65,6 +82,5 @@ export default function Home() {
         </div>
       </main>
     </div>
-  )
+  );
 }
-

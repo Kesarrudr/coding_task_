@@ -34,8 +34,8 @@ export default function SignInPage() {
     if (result) {
       const authToken = result.authToken;
       localStorage.setItem("authToken", authToken);
-      showSuccessNotification("Signed in successfully!");
       router.push("/dashboard");
+      showSuccessNotification("Signed in successfully!");
     }
   };
 
