@@ -1,14 +1,12 @@
 # Coding Task Project
 
-This project is designed to manage and track coding contests from various platforms. It consists of three main parts:
+## Project Overview
 
-- **Backend** (Handles API and database operations)
-- **Contest Worker** (Fetches contest data and saves it to the database)
-- **Frontend** (User interface for viewing and interacting with contests)
+This project consists of three main components:
 
-## Repository
-
-GitHub Repository: [Coding Task](https://github.com/Kesarrudr/coding_task_)
+- **Backend**: Handles API requests and database management.
+- **Contest Worker**: Periodically fetches contests and assigns them to relevant videos.
+- **Frontend**: Provides the user interface.
 
 ## Setup Instructions
 
@@ -54,7 +52,13 @@ GitHub Repository: [Coding Task](https://github.com/Kesarrudr/coding_task_)
    pnpm install
    ```
 
-3. Start the worker:
+3. Create a `.env` file and copy the contents from `.env.example`:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+4. Start the worker:
 
    ```sh
    pnpm run dev
@@ -89,12 +93,38 @@ GitHub Repository: [Coding Task](https://github.com/Kesarrudr/coding_task_)
    pnpm run dev
    ```
 
+   **Routes:**
+
+   - The user platform is available at `/`.
+   - The `/upload` route is for manually uploading solutions.
+
 ## Features
 
 - Fetch and display past, ongoing, and upcoming coding contests.
 - Bookmark contests for future reference.
 - Automatically update contest data via the contest worker.
 - Built using **TypeScript, React, Node.js, PostgreSQL**, and **Docker**.
+- Fetches past, upcoming, and featured contests.
+- Assigns contests to newly uploaded videos.
+- Efficient database and caching mechanisms.
+- Mobile and tablet responsive UI.
+- Light and dark mode with a toggle option.
+- Automated fetching of solution links from YouTube.
+- Well-documented code.
+
+## Assignment Details
+
+### Requirements Implemented
+
+- Fetching upcoming contests from Codeforces, CodeChef, and Leetcode.
+- Displaying the date and time remaining before the contest starts.
+- Displaying past contests with filtering by platform.
+- Allowing users to bookmark contests.
+- Providing a way to populate and fetch contest solutions from YouTube.
+- UI is mobile and tablet responsive.
+- Light and dark mode toggle.
+- Automated fetching of YouTube solution links.
+- Well-documented and structured codebase.
 
 ## Demo
 
