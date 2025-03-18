@@ -60,7 +60,14 @@ GitHub Repository: [Coding Task](https://github.com/Kesarrudr/coding_task_)
    pnpm run dev
    ```
 
-   **Note:** Keep this running to ensure contest data is continuously saved to the database.
+   > [!NOTE]
+   > Keep this running to ensure contest data is continuously saved
+   > to the database.
+   > This worker keeps running to save contests to the database.
+   > An event listener runs every 2 minutes to fetch the latest video uploads on
+   > the platform and assign relevant contests.
+   > Currently, it fetches videos from the last 30 days, but ideally, it should
+   > fetch only videos uploaded in the last 2 minutes.
 
 ### 3. Frontend
 

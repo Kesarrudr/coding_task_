@@ -1,9 +1,0 @@
-{
-	"dependencies": {
-		"@googleapis/youtube": "^22.0.0",
-		"@types/youtube": "^0.1.0",
-		"dev": "^0.1.3",
-		"i": "^0.3.7",
-		"npm": "^11.2.0"
-	}
-}

@@ -8,6 +8,7 @@ import { CodeChefEvent } from "./types/types";
 import { CodeChefFunction } from "./platfrom/codeChef";
 import { CodeForcesFunction } from "./platfrom/codeforce";
 import { uploadSolutions } from "./platfrom/uploadSolutins";
+import { getChannelId, repeatUpdate } from "./utilis/helperfuntions";
 
 async function main() {
   const prisma = new PrismaClient();
@@ -145,6 +146,14 @@ async function main() {
   for (const data of solutions) {
     await uploadSolutions(data.platfrom, data.playlistcode);
   }
+
+  const channelId = await getChannelId("@TLE_Eliminators");
+
+  if (!channelId) {
+    console.log("can't get the channelID");
+    return;
+  }
+  await repeatUpdate(channelId);
 }
 
 main();

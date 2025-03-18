@@ -2,10 +2,9 @@ import { PlatFromEnum } from "@prisma/client";
 import {
   checkEvent,
   findSolution,
-  getChannelVideos,
+  getplaylistVideos,
 } from "../utilis/helperfuntions";
 import { getContestsData, uploadDataQuery } from "../utilis/query";
-import {} from "@googleapis/youtube";
 import { youtube_v3 } from "googleapis";
 
 const uploadSolutions = async (
@@ -22,7 +21,7 @@ const uploadSolutions = async (
   let playList: youtube_v3.Schema$PlaylistItem[] = [];
   let nextToken;
   do {
-    const response = await getChannelVideos(playListCode, nextToken);
+    const response = await getplaylistVideos(playListCode, nextToken);
 
     if (response) {
       const { nextPageToken, items } = response;

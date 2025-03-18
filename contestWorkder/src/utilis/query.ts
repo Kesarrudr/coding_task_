@@ -33,4 +33,27 @@ const uploadDataQuery = async (data: UploadDataType[]) => {
   }
 };
 
-export { getContestsData, uploadDataQuery };
+const noSoutionsContest = async () => {
+  try {
+    const data = await prisma.contest.findMany({
+      where: {
+        ContestSolutions: {
+          none: {},
+        },
+      },
+      select: {
+        id: true,
+        PlatFrom: true,
+        contestName: true,
+      },
+    });
+
+    return data;
+  } catch (error) {
+    console.log("Error while getting contests with no solutins:", error);
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+export { getContestsData, uploadDataQuery, noSoutionsContest };
