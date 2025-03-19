@@ -8,6 +8,11 @@ This project consists of three main components:
 - **Contest Worker**: Periodically fetches contests and assigns them to relevant videos.
 - **Frontend**: Provides the user interface.
 
+## Demo
+
+To see the demo, visit the Google Drive link:
+[Demo Link](https://drive.google.com/drive/folders/1J8_h0RqX57NdOf7eSKG_mrpIAfEDU4-R?usp=sharing)
+
 ## Setup Instructions
 
 ### 1. Backend
@@ -125,8 +130,3 @@ This project consists of three main components:
 - Light and dark mode toggle.
 - Automated fetching of YouTube solution links.
 - Well-documented and structured codebase.
-
-## Demo
-
-To see the demo, visit the Google Drive link:
-[Demo Link](https://drive.google.com/drive/folders/1J8_h0RqX57NdOf7eSKG_mrpIAfEDU4-R?usp=sharing)
