@@ -6,12 +6,13 @@ import {
   findUser,
   registerUser,
   solutionUpload,
+  updateContestSolutionQuery,
 } from "../database";
 import { StatusCode } from "../types";
 import { AppError } from "./AppError";
 import {
+  ChangeSolutionType,
   UploadSolutionArrayType,
-  UploadSolutionType,
   UserSignUpType,
 } from "./zod";
 import { PlatFromEnum } from "@prisma/client";
@@ -63,7 +64,12 @@ const getContestData = async (
   return result;
 };
 
+const updateContestSolution = async (updateData: ChangeSolutionType) => {
+  await updateContestSolutionQuery(updateData);
+};
+
 export {
+  updateContestSolution,
   checkUser,
   createNewUser,
   getContestData,

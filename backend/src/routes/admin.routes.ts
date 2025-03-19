@@ -2,9 +2,12 @@ import { Request, Response } from "express";
 import {
   AppError,
   asyncHandler,
+  ChangeSolutionSchema,
+  ChangeSolutionType,
   sendResponse,
   StatusCode,
   StatusEnum,
+  updateContestSolution,
   updateSolution,
   UploadSolutionArraySchema,
   UploadSolutionArrayType,
@@ -40,4 +43,22 @@ const uploadSolution = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-export { uploadSolution };
+const changeSolutions = asyncHandler(async (req: Request, res: Response) => {
+  const data = req.body;
+
+  const parseData: SafeParseReturnType<any, ChangeSolutionType> =
+    ChangeSolutionSchema.safeParse(data);
+
+  if (!parseData.success) {
+    throw new AppError(
+      parseData.error.errors[0].message,
+      StatusCode.BAD_REQUEST,
+    );
+  }
+
+  await updateContestSolution(parseData.data);
+
+  sendResponse(res, StatusCode.OK, StatusEnum.success, `Update Solution`);
+});
+
+export { uploadSolution, changeSolutions };

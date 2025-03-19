@@ -1,5 +1,10 @@
 import { PlatFromEnum, Prisma } from "@prisma/client";
-import { AppError, prisma, UploadSolutionArrayType } from "../functions";
+import {
+  AppError,
+  ChangeSolutionType,
+  prisma,
+  UploadSolutionArrayType,
+} from "../functions";
 import { StatusCode } from "../types";
 
 const registerUser = async (username: string, hashPassword: string) => {
@@ -169,4 +174,36 @@ const contestData = async (
   }
 };
 
-export { registerUser, findUser, bookMarkUpdate, solutionUpload, contestData };
+const updateContestSolutionQuery = async (updateData: ChangeSolutionType) => {
+  try {
+    if (updateData.removeURLs) {
+      await prisma.contestSolutions.deleteMany({
+        where: {
+          url: { in: updateData.removeURLs },
+          contestId: updateData.contestId,
+        },
+      });
+    }
+  } catch (error) {
+    console.log("Error:", error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        throw new AppError(
+          `Given url is already the solution of contest. Provide new solution`,
+          StatusCode.BAD_GATEWAY,
+        );
+      }
+    }
+
+    throw new AppError(`DataBase error`, StatusCode.SERVICE_UNAVAILABLE, false);
+  }
+};
+
+export {
+  registerUser,
+  findUser,
+  bookMarkUpdate,
+  solutionUpload,
+  contestData,
+  updateContestSolutionQuery,
+};

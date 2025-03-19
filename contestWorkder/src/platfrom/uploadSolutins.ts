@@ -1,6 +1,6 @@
 import { PlatFromEnum } from "@prisma/client";
 import {
-  checkEvent,
+  checkFutureEvent,
   findSolution,
   getplaylistVideos,
 } from "../utilis/helperfuntions";
@@ -13,10 +13,9 @@ const uploadSolutions = async (
 ) => {
   const repos = await getContestsData(platfrom);
   if (!repos) return;
-  const pastContests = repos.flatMap((contest) => {
-    const check = checkEvent(contest.StartTime);
-    return check ? [contest] : [];
-  });
+  const pastContests = repos.filter(
+    (contest) => !checkFutureEvent(contest.StartTime),
+  );
 
   let playList: youtube_v3.Schema$PlaylistItem[] = [];
   let nextToken;
@@ -32,13 +31,25 @@ const uploadSolutions = async (
     }
   } while (nextToken);
 
-  const titleArray = playList.map((itema) => itema.snippet?.title);
+  const titleArray = playList
+    .filter(
+      (iteam): iteam is { snippet: { title: string } } =>
+        !!iteam.snippet?.title,
+    )
+    .flatMap((itema) => itema.snippet.title.split("|")[0].trim());
 
   const uploadData = pastContests.flatMap((contest) => {
     const resp = findSolution(
-      `${contest.PlatFrom + " " + contest.contestName}`,
+      contest.PlatFrom === PlatFromEnum.CodeForces
+        ? contest.contestName
+        : `${contest.PlatFrom + " " + contest.contestName}`,
       titleArray,
     );
+
+    if (resp.bestMatch.rating <= 0.6) {
+      return [];
+    }
+
     const bestMatchSolution = playList[resp.bestMatchIndex];
     const url = `https://www.youtube.com/watch?v=${bestMatchSolution.snippet?.resourceId?.videoId}`;
 

@@ -44,14 +44,22 @@ const ContestQuerySchema = z.object({
     .optional(),
 });
 
+const ChangeSolutionSchema = z.object({
+  contestId: z.string().nonempty("Required ContestID"),
+  removeURLs: z.array(z.string()).optional(),
+});
+
 type UserSignUpType = z.infer<typeof UserSignUpSchema>;
 type UserSignInType = z.infer<typeof UserSignInSchema>;
 type BookMarkQueryType = z.infer<typeof BookMarkQuery>;
 type UploadSolutionType = z.infer<typeof UploadSolutionSchema>;
 type ContestQueryType = z.infer<typeof ContestQuerySchema>;
 type UploadSolutionArrayType = z.infer<typeof UploadSolutionArraySchema>;
+type ChangeSolutionType = z.infer<typeof ChangeSolutionSchema>;
 
 export {
+  ChangeSolutionSchema,
+  ChangeSolutionType,
   UploadSolutionArrayType,
   UploadSolutionArraySchema,
   ContestQuerySchema,

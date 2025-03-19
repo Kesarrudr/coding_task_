@@ -46,13 +46,21 @@ import {
 } from "@/components/ui/dialog";
 import { useContesthook } from "@/hooks/contest";
 import { PlatFormEnum } from "@/types/types";
-import { ContestDataType, UploadSolutionType } from "backend/utilis";
+import {
+  ChangeSolutionType,
+  ContestDataType,
+  UploadSolutionType,
+} from "backend/utilis";
 import { useSolutionHook } from "@/hooks/solutions";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useRemoveSolution } from "@/hooks/removeSolution";
+import { setConfig } from "next/config";
 
 export default function UploadPage() {
   const router = useRouter();
   const { getContest } = useContesthook();
   const { isLoading: uploadingLoader, uploadsolution } = useSolutionHook();
+  const { isLoading: removingLoader, removeSolution } = useRemoveSolution();
 
   const [contests, setContests] = useState<ContestDataType[]>([]);
   const [filteredContests, setFilteredContests] = useState<ContestDataType[]>(
@@ -70,7 +78,10 @@ export default function UploadPage() {
   const [selectedContestId, setSelectedContestId] = useState<string>("");
   const [newSolutionUrl, setNewSolutionUrl] = useState("");
 
-  // Add a new state for tracking which contest has an open URL input
+  const [selectedSolutionsToRemove, setSelectedSolutionsToRemove] = useState<
+    Record<string, string[]>
+  >({});
+
   const [addingUrlToContestId, setAddingUrlToContestId] = useState<
     string | null
   >(null);
@@ -242,17 +253,41 @@ export default function UploadPage() {
       return;
     }
 
-    setAddingUrlToContestId(null);
+    try {
+      setAddingUrlToContestId(null);
 
-    const result = await uploadsolution(uploadData);
-    if (result) {
-      showSuccessNotification(
-        `Successfully uploaded ${result?.data.count} solution${result?.data.count !== 1 ? "s" : ""}`,
+      const uniqueUploadData = Array.from(
+        new Map(
+          uploadData.map((item) => [`${item.contestId}-${item.url}`, item]),
+        ).values(),
       );
-    }
 
-    setUploadData([]);
-    setSelectedContestId("");
+      const result = await uploadsolution(uniqueUploadData);
+      if (!result) return;
+
+      setContests((prev) =>
+        prev.map((contest) => {
+          // Get all new solutions relevant to this contest
+          const newSolutions = uniqueUploadData
+            .filter((item) => item.contestId === contest.id)
+            .map((item) => ({ url: item.url }));
+
+          if (newSolutions.length > 0) {
+            return {
+              ...contest,
+              ContestSolutions: [...contest.ContestSolutions, ...newSolutions],
+            };
+          }
+
+          return contest;
+        }),
+      );
+      showSuccessNotification(`Successfully uploaded ${result.data.count} `);
+      setUploadData([]);
+      setSelectedContestId("");
+    } catch (error) {
+      showErrorNotification("Failed to upload solutions");
+    }
   };
 
   const getPlatformUrl = (platform: PlatFormEnum, slug: string) => {
@@ -273,6 +308,70 @@ export default function UploadPage() {
     return contest ? contest.contestName : "Unknown Contest";
   };
 
+  // Toggle solution selection for removal
+  const toggleSolutionSelection = (contestId: string, url: string) => {
+    setSelectedSolutionsToRemove((prev) => {
+      const currentSelections = prev[contestId] || [];
+      const newSelections = currentSelections.includes(url)
+        ? currentSelections.filter((u) => u !== url)
+        : [...currentSelections, url];
+
+      return {
+        ...prev,
+        [contestId]: newSelections,
+      };
+    });
+  };
+
+  // Handle removing selected solutions
+  const handleRemoveSelectedSolutions = async (contestId: string) => {
+    const urlsToRemove = selectedSolutionsToRemove[contestId] || [];
+
+    if (urlsToRemove.length === 0) {
+      showErrorNotification("No solutions selected for removal");
+      return;
+    }
+
+    try {
+      const removeData: ChangeSolutionType = {
+        contestId,
+        removeURLs: urlsToRemove,
+      };
+
+      const result = await removeSolution(removeData);
+
+      if (result?.status === "success") {
+        // Update local state to remove the solutions
+        setContests((prev) =>
+          prev.map((contest) => {
+            if (contest.id === contestId) {
+              return {
+                ...contest,
+                ContestSolutions: contest.ContestSolutions.filter(
+                  (solution) => !urlsToRemove.includes(solution.url),
+                ),
+              };
+            }
+            return contest;
+          }),
+        );
+
+        setSelectedSolutionsToRemove((prev) => ({
+          ...prev,
+          [contestId]: [],
+        }));
+
+        showSuccessNotification(
+          `Successfully removed ${urlsToRemove.length} solution${urlsToRemove.length !== 1 ? "s" : ""}`,
+        );
+      }
+    } catch (error) {
+      showErrorNotification("Failed to remove solutions");
+    }
+  };
+  const toggleContestSelection = (contestId: string) => {
+    setSelectedContestId((prev) => (prev === contestId ? "" : contestId));
+  };
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -337,13 +436,14 @@ export default function UploadPage() {
                   Select Contest
                 </label>
                 <Select
-                  value={selectedContestId || ""}
+                  value={selectedContestId}
                   onValueChange={setSelectedContestId}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a contest" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
+                    <SelectItem value="none">None</SelectItem>
                     {contests.map((contest) => (
                       <SelectItem key={contest.id} value={contest.id}>
                         {contest.contestName}
@@ -366,11 +466,9 @@ export default function UploadPage() {
 
               <div className="flex items-end">
                 <Button
-                  onClick={() => {
-                    handleAddSolution();
-                  }}
+                  onClick={() => handleAddSolution()}
                   className="w-full gap-2"
-                  disabled={addingToQueue}
+                  disabled={addingToQueue || !selectedContestId}
                 >
                   {addingToQueue ? (
                     <>
@@ -481,196 +579,239 @@ export default function UploadPage() {
                   transition={{ duration: 0.3 }}
                   className="grid grid-cols-1 gap-4 md:grid-cols-2"
                 >
-                  {filteredContests.map(
-                    (contest: ContestDataType, index: number) => (
-                      <motion.div
-                        key={contest.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: (index % 2) * 0.1 }}
+                  {filteredContests.map((contest, index) => (
+                    <motion.div
+                      key={contest.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: (index % 2) * 0.1 }}
+                    >
+                      <Card
+                        className={`h-full overflow-hidden border border-border/30 bg-card shadow-sm transition-all hover:shadow-md ${
+                          selectedContestId === contest.id
+                            ? "ring-2 ring-primary"
+                            : ""
+                        }`}
                       >
-                        <Card
-                          className={`h-full overflow-hidden border-0 bg-background transition-all ${
-                            selectedContestId === contest.id
-                              ? "ring-2 ring-primary"
-                              : ""
-                          }`}
-                        >
-                          <CardHeader className="pb-2">
-                            <Badge
-                              variant="outline"
-                              className={`w-fit ${getPlatformColor(contest.PlatFrom as PlatFormEnum)}`}
-                            >
-                              {contest.PlatFrom}
-                            </Badge>
-                            <CardTitle className="text-xl mt-2">
-                              {contest.contestName}
-                            </CardTitle>
-                            <p className="text-muted-foreground">
-                              {formatISTTime(contest.StartTime)}
-                            </p>
-                          </CardHeader>
-                          <CardContent className="pb-2">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                                <span className="font-medium">
-                                  {getTimeSince(contest.StartTime)}
-                                </span>
-                              </div>
+                        <CardHeader className="pb-2">
+                          <Badge
+                            variant="outline"
+                            className={`w-fit ${getPlatformColor(contest.PlatFrom as PlatFormEnum)}`}
+                          >
+                            {contest.PlatFrom}
+                          </Badge>
+                          <CardTitle className="text-xl mt-2">
+                            {contest.contestName}
+                          </CardTitle>
+                          <p className="text-muted-foreground">
+                            {formatISTTime(contest.StartTime)}
+                          </p>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                              <span className="font-medium">
+                                {getTimeSince(contest.StartTime)}
+                              </span>
+                            </div>
 
-                              {contest.ContestSolutions.length > 0 && (
-                                <div className="flex items-center gap-2">
-                                  <Video className="h-4 w-4 text-muted-foreground" />
-                                  <Dialog>
-                                    <DialogTrigger asChild>
-                                      <Button
-                                        variant="link"
-                                        className="h-auto p-0"
-                                      >
-                                        {contest.ContestSolutions.length}{" "}
-                                        existing solution
-                                        {contest.ContestSolutions.length !== 1
-                                          ? "s"
-                                          : ""}
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-[500px]">
-                                      <DialogHeader>
-                                        <DialogTitle className="flex items-center gap-2 text-xl">
-                                          <Video className="h-5 w-5 text-primary" />
-                                          Existing Solution Videos
-                                        </DialogTitle>
-                                      </DialogHeader>
-                                      <div className="mt-4 space-y-3 pr-1 max-h-[60vh] overflow-y-auto">
-                                        {contest.ContestSolutions.map(
-                                          (solution, idx) => (
+                            {contest.ContestSolutions.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Video className="h-4 w-4 text-muted-foreground" />
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="link"
+                                      className="h-auto p-0"
+                                    >
+                                      {contest.ContestSolutions.length} existing
+                                      solution
+                                      {contest.ContestSolutions.length !== 1
+                                        ? "s"
+                                        : ""}
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="sm:max-w-[500px]">
+                                    <DialogHeader>
+                                      <DialogTitle className="flex items-center gap-2 text-xl">
+                                        <Video className="h-5 w-5 text-primary" />
+                                        Existing Solution Videos
+                                      </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="mt-4 space-y-3 pr-1 max-h-[60vh] overflow-y-auto">
+                                      {contest.ContestSolutions.map(
+                                        (solution, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted"
+                                          >
+                                            <Checkbox
+                                              id={`solution-${contest.id}-${idx}`}
+                                              checked={(
+                                                selectedSolutionsToRemove[
+                                                  contest.id
+                                                ] || []
+                                              ).includes(solution.url)}
+                                              onCheckedChange={() =>
+                                                toggleSolutionSelection(
+                                                  contest.id,
+                                                  solution.url,
+                                                )
+                                              }
+                                              disabled={removingLoader}
+                                            />
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                                              <Video className="h-5 w-5 text-primary" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="font-medium">
+                                                Solution Video #{idx + 1}
+                                              </p>
+                                              <p className="text-sm text-muted-foreground truncate">
+                                                {solution.url}
+                                              </p>
+                                            </div>
                                             <a
-                                              key={idx}
                                               href={solution.url}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              className="flex items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted"
+                                              className="shrink-0 text-muted-foreground hover:text-primary"
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
                                             >
-                                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                                                <Video className="h-5 w-5 text-primary" />
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                <p className="font-medium">
-                                                  Solution Video #{idx + 1}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground truncate">
-                                                  {solution.url}
-                                                </p>
-                                              </div>
-                                              <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                              <ExternalLink className="h-4 w-4" />
                                             </a>
-                                          ),
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                    <div className="mt-4 flex justify-between">
+                                      <Button
+                                        variant="destructive"
+                                        onClick={() =>
+                                          handleRemoveSelectedSolutions(
+                                            contest.id,
+                                          )
+                                        }
+                                        disabled={
+                                          removingLoader ||
+                                          !(
+                                            selectedSolutionsToRemove[
+                                              contest.id
+                                            ]?.length > 0
+                                          )
+                                        }
+                                        className="gap-2"
+                                      >
+                                        {removingLoader ? (
+                                          <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Removing...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Trash2 className="h-4 w-4" />
+                                            Remove Selected
+                                          </>
                                         )}
-                                      </div>
-                                      <div className="mt-4 flex justify-end">
-                                        <DialogClose asChild>
-                                          <Button variant="outline">
-                                            Close
-                                          </Button>
-                                        </DialogClose>
-                                      </div>
-                                    </DialogContent>
-                                  </Dialog>
-                                </div>
-                              )}
-
-                              <div className="flex items-center gap-2">
-                                <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                                <a
-                                  href={getPlatformUrl(
-                                    contest.PlatFrom as PlatFormEnum,
-                                    contest.querySlug,
-                                  )}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-primary hover:underline"
-                                >
-                                  View Contest
-                                </a>
-                              </div>
-                            </div>
-                          </CardContent>
-                          <CardFooter className="flex flex-col gap-3 ">
-                            {addingUrlToContestId === contest.id ? (
-                              <div className="flex w-full flex-col gap-2">
-                                <div className="flex gap-2">
-                                  <Input
-                                    placeholder="https://www.youtube.com/watch?v=..."
-                                    value={directUrlInput}
-                                    onChange={(e) =>
-                                      setDirectUrlInput(e.target.value)
-                                    }
-                                    className="flex-1"
-                                  />
-                                  <Button
-                                    size="sm"
-                                    onClick={() =>
-                                      handleAddSolution(
-                                        contest.id,
-                                        directUrlInput,
-                                      )
-                                    }
-                                    disabled={addingToQueue}
-                                    className="shrink-0"
-                                  >
-                                    {addingToQueue ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      "Add"
-                                    )}
-                                  </Button>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setAddingUrlToContestId(null)}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex gap-2 w-full">
-                                <Button
-                                  variant={
-                                    selectedContestId === contest.id
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  className="flex-1"
-                                  onClick={() =>
-                                    setSelectedContestId(
-                                      selectedContestId === contest.id
-                                        ? ""
-                                        : contest.id,
-                                    )
-                                  }
-                                >
-                                  {selectedContestId === contest.id
-                                    ? "Selected"
-                                    : "Select Contest"}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() =>
-                                    setAddingUrlToContestId(contest.id)
-                                  }
-                                  className="shrink-0"
-                                >
-                                  Add URL
-                                </Button>
+                                      </Button>
+                                      <DialogClose asChild>
+                                        <Button variant="outline">Close</Button>
+                                      </DialogClose>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
                               </div>
                             )}
-                          </CardFooter>
-                        </Card>
-                      </motion.div>
-                    ),
-                  )}
+
+                            <div className="flex items-center gap-2">
+                              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                              <a
+                                href={getPlatformUrl(
+                                  contest.PlatFrom as PlatFormEnum,
+                                  contest.querySlug,
+                                )}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline"
+                              >
+                                View Contest
+                              </a>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="flex flex-col gap-3 border-t pt-3">
+                          {addingUrlToContestId === contest.id ? (
+                            <div className="flex w-full flex-col gap-2">
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="https://www.youtube.com/watch?v=..."
+                                  value={directUrlInput}
+                                  onChange={(e) =>
+                                    setDirectUrlInput(e.target.value)
+                                  }
+                                  className="flex-1"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    handleAddSolution(
+                                      contest.id,
+                                      directUrlInput,
+                                    )
+                                  }
+                                  disabled={addingToQueue}
+                                  className="shrink-0"
+                                >
+                                  {addingToQueue ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    "Add"
+                                  )}
+                                </Button>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setAddingUrlToContestId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 w-full">
+                              <Button
+                                variant={
+                                  selectedContestId === contest.id
+                                    ? "default"
+                                    : "outline"
+                                }
+                                className="flex-1"
+                                onClick={() =>
+                                  toggleContestSelection(contest.id)
+                                }
+                              >
+                                {selectedContestId === contest.id
+                                  ? "Selected"
+                                  : "Select Contest"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() =>
+                                  setAddingUrlToContestId(contest.id)
+                                }
+                                className="shrink-0"
+                              >
+                                Add URL
+                              </Button>
+                            </div>
+                          )}
+                        </CardFooter>
+                      </Card>
+                    </motion.div>
+                  ))}
                 </motion.div>
               </AnimatePresence>
 
@@ -685,17 +826,13 @@ export default function UploadPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
 
-                <span className="mx-2 text-sm">Page {pageNo + 1}</span>
+                <span className="mx-2 text-sm">Page {pageNo + 1} </span>
 
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => handlePageChange(pageNo + 1)}
-                  disabled={
-                    contests.length <= 0 ||
-                    loading ||
-                    filteredContests.length === 0
-                  }
+                  disabled={loading || filteredContests.length === 0}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

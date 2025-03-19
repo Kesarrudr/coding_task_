@@ -1,7 +1,9 @@
 import { youtube_v3 } from "@googleapis/youtube";
 import { google } from "googleapis";
 import { BestMatch, findBestMatch } from "string-similarity";
-import { noSoutionsContest, uploadDataQuery } from "./query";
+import { noSoutionsContests, uploadDataQuery } from "./query";
+import { PlatFromEnum } from "@prisma/client";
+
 const checkEvent = (timeStamp: number) => {
   const date = new Date(timeStamp * 1000);
   const now = new Date();
@@ -33,9 +35,8 @@ async function getplaylistVideos(playlistId: string, nextPageToken?: string) {
   }
 }
 
-function findSolution(contestName: string, matchTilesArray: any[]) {
+function findSolution(contestName: string, matchTilesArray: string[]) {
   const resp: BestMatch = findBestMatch(contestName, matchTilesArray);
-
   return resp;
 }
 
@@ -53,6 +54,10 @@ async function getChannelId(channelHandle: string) {
   }
 
   return channelId;
+}
+
+function checkFutureEvent(timeStamp: number) {
+  return timeStamp > Math.floor(Date.now() / 1000);
 }
 
 async function getChannelVideos(channelId: string) {
@@ -106,26 +111,48 @@ async function updateLatedSolution(channelId: string) {
     `🎥 Found ${intersetUpload.length} new videos. Fetching contests...`,
   );
 
-  const contestData = await noSoutionsContest();
+  const contestData = await noSoutionsContests();
+
   if (!contestData || contestData.length === 0) {
     console.log("✅ All contests already have at least one solution.");
     return;
   }
 
-  console.log(`🏆 Found ${contestData.length} contests without solutions.`);
+  const pastcontests = contestData.filter(
+    (contest) => !checkFutureEvent(contest.StartTime),
+  );
 
-  const contestNameArray = contestData.map(
-    (contest) => `${contest.PlatFrom} ${contest.contestName}`,
+  if (!pastcontests.length) {
+    console.log(`✅ All pasts contests have the solutions`);
+    return;
+  }
+
+  const contestNameArray = pastcontests.map((contest) =>
+    contest.PlatFrom === PlatFromEnum.CodeForces
+      ? `${contest.contestName}`
+      : `${contest.PlatFrom + " " + contest.contestName}`,
   );
 
   const uploadData = intersetUpload.flatMap((upload) => {
     if (upload.snippet?.title) {
-      const bestMatch = findSolution(upload.snippet.title, contestNameArray);
+      const bestMatch: BestMatch = findSolution(
+        upload.snippet.title.split("|")[0].trim(),
+        contestNameArray,
+      );
+
+      if (bestMatch.bestMatch.rating <= 0.6) {
+        return [];
+      }
+
       const url = `https://www.youtube.com/watch?v=${upload.id?.videoId}`;
 
       console.log(
-        `🔍 Matched "${upload.snippet.title}" to "${contestNameArray[bestMatch.bestMatchIndex]}"`,
+        `🔍 Matched "${upload.snippet.title}" to "${contestNameArray[bestMatch.bestMatchIndex]}" having contest id ${pastcontests[bestMatch.bestMatchIndex].id}`,
       );
+
+      if (contestNameArray.length - 1 > bestMatch.bestMatchIndex) {
+        contestNameArray.splice(bestMatch.bestMatchIndex, 1);
+      }
 
       return [{ url, contestIndex: bestMatch.bestMatchIndex }];
     }
@@ -138,7 +165,7 @@ async function updateLatedSolution(channelId: string) {
   }
 
   const queryData = uploadData.map((data) => ({
-    contestId: contestData[data.contestIndex].id,
+    contestId: pastcontests[data.contestIndex].id,
     url: data.url,
   }));
 
@@ -161,4 +188,5 @@ export {
   findSolution,
   getplaylistVideos,
   getChannelId,
+  checkFutureEvent,
 };

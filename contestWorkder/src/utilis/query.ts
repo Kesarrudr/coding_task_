@@ -33,7 +33,7 @@ const uploadDataQuery = async (data: UploadDataType[]) => {
   }
 };
 
-const noSoutionsContest = async () => {
+const noSoutionsContests = async () => {
   try {
     const data = await prisma.contest.findMany({
       where: {
@@ -44,7 +44,9 @@ const noSoutionsContest = async () => {
       select: {
         id: true,
         PlatFrom: true,
+        StartTime: true,
         contestName: true,
+        ContestSolutions: true,
       },
     });
 
@@ -56,4 +58,4 @@ const noSoutionsContest = async () => {
   }
 };
 
-export { getContestsData, uploadDataQuery, noSoutionsContest };
+export { getContestsData, uploadDataQuery, noSoutionsContests };
